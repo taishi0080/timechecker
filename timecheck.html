@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>タイムチェックツール</title>
+<style>
+  body {
+    font-family: "Helvetica", "Arial", sans-serif;
+    margin: 20px;
+    text-align: center;
+    background-color: #f9fafb;
+  }
+  h1 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+  }
+  input[type="text"] {
+    width: 90%;
+    max-width: 400px;
+    padding: 10px;
+    font-size: 16px;
+    margin: 10px auto 20px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    display: block;
+  }
+  .button-group {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .checkButton {
+    flex: 1;
+    min-width: 100px;
+    max-width: 150px;
+    padding: 15px;
+    font-size: 18px;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .checkButton:active { transform: scale(0.97); opacity: 0.85; }
+  #checkGood { background: linear-gradient(135deg,#007aff,#00c3ff); }
+  #checkNormal { background: linear-gradient(135deg,#4CAF50,#81C784); }
+  #checkWeak { background: linear-gradient(135deg,#FFC107,#FFD54F); color:#333; }
+
+  #downloadCSV { background: linear-gradient(135deg,#009688,#4DB6AC); }
+  #clearData { background: linear-gradient(135deg,#f44336,#e57373); }
+
+  button.actionBtn {
+    width: 90%;
+    max-width: 400px;
+    margin: 10px auto;
+    padding: 15px;
+    font-size: 18px;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    cursor: pointer;
+    transition: 0.2s;
+    display: block;
+  }
+
+  table {
+    margin: 20px auto;
+    border-collapse: collapse;
+    width: 95%;
+    max-width: 550px;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  th, td {
+    border-bottom: 1px solid #ddd;
+    padding: 10px;
+  }
+  th {
+    background-color: #f0f0f0;
+  }
+  tr:last-child td {
+    border-bottom: none;
+  }
+  .deleteRowBtn {
+    background: #f44336;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .deleteRowBtn:active {
+    opacity: 0.8;
+  }
+</style>
+</head>
+<body>
+
+  <h1>📍 タイムチェックツール</h1>
+  <input id="titleInput" type="text" placeholder="タイトルを入力（例：試合名・日付など）">
+
+  <div class="button-group">
+    <button id="checkGood" class="checkButton">◎</button>
+    <button id="checkNormal" class="checkButton">○</button>
+    <button id="checkWeak" class="checkButton">△</button>
+  </div>
+
+  <button id="downloadCSV" class="actionBtn">💾 CSVダウンロード</button>
+  <button id="clearData" class="actionBtn">🗑️ すべて削除</button>
+
+  <table id="timeTable">
+    <tr><th>#</th><th>種別</th><th>時刻</th><th>操作</th></tr>
+  </table>
+
+<script>
+  const STORAGE_KEY = "timecheck_data_v3";
+  let records = [];
+
+  const table = document.getElementById("timeTable");
+  const titleInput = document.getElementById("titleInput");
+
+  const btnGood = document.getElementById("checkGood");
+  const btnNormal = document.getElementById("checkNormal");
+  const btnWeak = document.getElementById("checkWeak");
+  const btnCSV = document.getElementById("downloadCSV");
+  const btnClear = document.getElementById("clearData");
+
+  // --- 初期ロード時 ---
+  window.addEventListener("load", () => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      records = JSON.parse(saved);
+      renderTable();
+    }
+  });
+
+  // --- チェック追加 ---
+  function addRecord(type) {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('ja-JP');
+    records.push({ type, time: timeString });
+    saveData();
+    renderTable();
+    if (navigator.vibrate) navigator.vibrate(50);
+  }
+
+  btnGood.onclick = () => addRecord("◎");
+  btnNormal.onclick = () => addRecord("○");
+  btnWeak.onclick = () => addRecord("△");
+
+  // --- 個別削除 ---
+  function deleteRecord(index) {
+    if (confirm(`「${records[index].type} ${records[index].time}」を削除しますか？`)) {
+      records.splice(index, 1);
+      saveData();
+      renderTable();
+    }
+  }
+
+  // --- すべて削除（二重確認） ---
+  btnClear.onclick = () => {
+    if (confirm("⚠️ すべての記録を削除します。よろしいですか？")) {
+      if (confirm("本当に削除してもよいですか？（取り消しできません）")) {
+        records = [];
+        saveData();
+        renderTable();
+        alert("すべて削除しました。");
+      }
+    }
+  };
+
+  // --- CSVダウンロード ---
+  btnCSV.onclick = () => {
+    if (records.length === 0) {
+      alert("記録がありません。");
+      return;
+    }
+    const title = titleInput.value.trim() || "time_log";
+    let csvContent = "data:text/csv;charset=utf-8,No,種別,時刻\n";
+    records.forEach((r, i) => {
+      csvContent += `${i + 1},${r.type},${r.time}\n`;
+    });
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.href = encodedUri;
+    link.download = `${title}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
+  // --- 保存・描画 ---
+  function saveData() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  }
+
+  function renderTable() {
+    while (table.rows.length > 1) table.deleteRow(1);
+    records.forEach((r, i) => {
+      const row = table.insertRow(-1);
+      row.insertCell(0).textContent = i + 1;
+      row.insertCell(1).textContent = r.type;
+      row.insertCell(2).textContent = r.time;
+
+      const delBtn = document.createElement("button");
+      delBtn.textContent = "削除";
+      delBtn.className = "deleteRowBtn";
+      delBtn.onclick = () => deleteRecord(i);
+      row.insertCell(3).appendChild(delBtn);
+    });
+  }
+</script>
+
+</body>
+</html>
