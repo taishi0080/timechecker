@@ -1,265 +1,445 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>タイムチェック</title>
 <style>
-  body {
-    font-family: "Helvetica", "Arial", sans-serif;
-    background-color: #f9fafb;
-    margin: 20px;
-    text-align: center;
-  }
+  /* モバイル前提の最小UI */
+ :root { --gap:.6rem; --pad:.75rem; }
 
-  #titleArea {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-  }
-
-  h1 {
-    font-size: 1.5rem;
-    margin: 10px 0;
-  }
-
-  #editTitleBtn {
-    cursor: pointer;
-    background: none;
-    border: none;
-    font-size: 1.2rem;
-  }
-
-  input#titleInput {
-    font-size: 1.2rem;
-    text-align: center;
-    border: none;
-    border-bottom: 1px solid #ccc;
-    outline: none;
-    width: 60%;
-  }
-
-  /* ◎／○／△ボタン 横並び */
-  .buttonRow {
-    margin-top: 15px;
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-
-  .checkButton {
-    flex: 1;
-    min-width: 90px;
-    max-width: 150px;
-    padding: 14px;
-    font-size: 20px;
-    border: none;
-    border-radius: 10px;
-    color: white;
-    cursor: pointer;
-    transition: 0.2s;
-  }
-
-  .checkButton:active {
-    transform: scale(0.97);
-    opacity: 0.85;
-  }
-
-  .b1 { background: linear-gradient(135deg,#ff5252,#ff1744); } /* ◎ */
-  .b2 { background: linear-gradient(135deg,#ffb300,#ffd54f); color:black; } /* ○ */
-  .b3 { background: linear-gradient(135deg,#42a5f5,#64b5f6); } /* △ */
-
-  table {
-    margin: 20px auto;
-    border-collapse: collapse;
-    width: 95%;
-    max-width: 550px;
-    background: white;
-    border-radius: 10px;
-    overflow: hidden;
-  }
-
-  th, td {
-    border-bottom: 1px solid #ddd;
-    padding: 8px;
-    font-size: 0.9rem;
-  }
-
-  th {
-    background-color: #f0f0f0;
-  }
-
-  input.commentEdit {
-    width: 90%;
-    font-size: 14px;
-    padding: 3px;
-  }
-
-  .delBtn {
-    background: none;
-    border: none;
-    color: #e53935;
-    font-size: 1.1rem;
-    cursor: pointer;
-  }
-
-  button.action {
-    width: 90%;
-    max-width: 400px;
-    padding: 12px;
-    margin: 10px auto;
-    border: none;
-    border-radius: 10px;
-    color: white;
-    font-size: 16px;
-    cursor: pointer;
-  }
-
-  #downloadCSV {
-    background: linear-gradient(135deg,#4CAF50,#81C784);
-  }
-
-  /* 🔴 全削除ボタンを赤色に */
-  #clearData {
-    background: linear-gradient(135deg,#e53935,#d32f2f);
-  }
+ body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", sans-serif; margin:0; line-height:1.6; }
+ 
+ header {
+  display: flex; flex-direction: column;  padding: var(--pad) 1rem; border-bottom: 1px solid #eee;  background: #f7f7f8;  position: sticky;  top: 0;  z-index: 10;}
+  .header-top {  display: flex;  flex-wrap: wrap;  align-items: center;  gap: .5rem;}
+  .header-row {  display: flex;  flex-wrap: wrap;  gap: .5rem;}
+  
+ main { padding: var(--pad) 1rem; }
+  .row { display:flex; gap:var(--gap); flex-wrap:wrap; align-items:center; }
+  .btn { padding:.65rem 1rem; border-radius:10px; border:1px solid #ddd; background:#fff; font-weight:600; cursor:pointer; }
+  .btnred { padding:.65rem 1rem; border-radius:10px; border:1px solid #ee5555; background:#ee5555;color:#fff; font-weight:600; cursor:pointer; }
+  .btn.primary { background:#dd5577; color:#fff; border-color:#dd5577; }
+  .btn.blue { background:#1769e0; color:#fff; border-color:#1769e0; }
+  .btn.green   { background:#00bfa5; color:#fff; border-color:#00bfa5; }
+  .btn.orange  { background:#ff8f00; color:#fff; border-color:#ff8f00; }
+  .btn.blue { background:#1769e0; color:#fff; border-color:#1769e0; }
+  .list { margin-top:.6rem; border:1px solid #eee; border-radius:10px; overflow:hidden; }
+  .item { display:flex; align-items:center; gap:.5rem; padding:.6rem .8rem; border-top:1px solid #eee; }
+  .item:first-child { border-top:none; }
+  .label { min-width:2.2rem; text-align:center; font-weight:700; border-radius:999px; padding:.15rem .5rem; }
+  .type0 { background:#1769e0; color:#fff; } /* ◎ */
+  .type1 { background:#00bfa5; color:#fff; } /* ○ */
+  .type2 { background:#ff8f00; color:#fff; } /* △ */
+  .timecode { font-variant-numeric: tabular-nums; color:#333; font-weight:600; }
+  .memo { flex:1; min-width:8rem; padding:.45rem .6rem; border:1px solid #ccc; border-radius:8px; }
+  .msg { white-space:pre-wrap; font-size:.9em; color:#444; padding:.6rem; background:#cccccc; border:1px dashed #ddd; border-radius:8px; margin-top:.6rem; }
+  .small { font-size:.9em; color:#666; }
+  #titleDisplay {
+  font-size: 1.8em; /* ← お好みで調整可能。例：2em, 24pxなど */
+  font-weight: bold;
+}
+``
 </style>
 </head>
 <body>
 
-  <div id="titleArea">
-    <h1 id="pageTitle">新しい記録</h1>
-    <button id="editTitleBtn">✏️</button>
+<header>
+
+  <button id="startSession" class="btn primary" title="オールリセット＋開始TC設定">🆕 記録を新たに始める</button>
+  <div id="titleDisplay">タイムチェック</div>
+  <button id="editTitle" class="btn" title="タイトル編集">✏️</button>
+
+ <!-- 記録ボタン -->
+  <div class="row" style="margin-top:.25rem">
+    
+<button class="btn blue" id="addStrong">◎ OK</button>  <!-- 青 -->
+<button class="btn green"   id="addNormal">○ 使えるかも</button>  <!-- 緑 -->
+<button class="btn orange"  id="addWeak">△ 状況・インサート</button>    <!-- オレンジ -->
+
+</div>
+
+  <!-- 出力 -->
+  <div class="row" style="margin-top:.25rem">
+    <button class="btn" id="dlCsv">💾 CSV</button>
+    <button class="btn" id="dlXml">💾 XML</button>
   </div>
 
-  <!-- ◎／○／△ 横並び -->
-  <div class="buttonRow">
-    <button class="checkButton b1" id="btn1">◎ 記録</button>
-    <button class="checkButton b2" id="btn2">○ 記録</button>
-    <button class="checkButton b3" id="btn3">△ 記録</button>
-  </div>
+  <!-- 開始TC表示 -->
+  <div id="sessionInfo" class="small"></div>
+  <div id="msg" class="msg"></div>
 
-  <table id="timeTable">
-    <tr><th>#</th><th>種別</th><th>コメント</th><th>時刻</th><th></th></tr>
-  </table>
 
-  <button class="action" id="downloadCSV">💾 CSVダウンロード</button>
-  <button class="action" id="clearData">🗑️ 全削除</button>
+</header>
+
+<main>
+ 
+
+  <!-- 記録一覧（横に時刻＋各行メモ） -->
+  <div id="list" class="list"></div>
+
+  </main>
 
 <script>
-  const table = document.getElementById("timeTable");
-  const downloadCSV = document.getElementById("downloadCSV");
-  const clearData = document.getElementById("clearData");
-  let titleEl = document.getElementById("pageTitle");
-  const editTitleBtn = document.getElementById("editTitleBtn");
-  let titleInputActive = false;
-
-  let records = JSON.parse(localStorage.getItem("timecheck_records") || "[]");
-  let pageTitle = localStorage.getItem("timecheck_title") || "新しい記録";
-  titleEl.textContent = pageTitle;
-  renderTable();
-
-  function addRecord(type) {
-    const now = new Date();
-    const timeString = now.toLocaleTimeString("ja-JP");
-    records.push({ type, comment: "", time: timeString });
-    saveData();
-    renderTable();
-    if (navigator.vibrate) navigator.vibrate(30);
+/* =========================
+   管理者用 設定（プリセット）
+   ========================= */
+const CONFIG = {
+  sequence: {
+    xmemlVersion: "4",           // '4'（広く互換）/ '5'
+    nameSource: "title",         // 'title' or 'fixed'
+    fixedName: "",
+    idPrefix: "seq",
+    durationBufferFrames: 30     // 最後のマーカー + バッファ（1秒=30f）
+  },
+  timecode: {
+    timebaseFps: 30,             // 内部fps（UI非表示）
+    ntsc: true,                 // NDF: false / DF: true
+    displayFormat: "DF",        // 'NDF' or 'DF'（ntscに整合）
+    startMode: "firstRecordClock", // セッション開始＝実時間
+    startString: "00:00:00:00",  // startMode='fixed'時のみ使用
+    timezone: "Asia/Tokyo",
+    clockFrameAlwaysZero: true   // 実時間表記は常に hh:mm:ss:00
+  },
+  video: {
+    width: 1920,
+    height: 1080,
+    pixelAspectRatio: "square",
+    fieldDominance: "none",
+    sampleRateTagFromTimebase: true
+  },
+  marker: {
+    outputFormat: "in_out",      // <in>/<out> 形式
+    place: "sequence",           // <timecode>直後に直列配置
+    outForPoint: -1,             // 点マーカー
+    includeClockInComment: true,
+    typeLabelMap: { strong: "◎", normal: "○", weak: "△" }
+  },
+  advanced: {
+    escapeXml: true,
+    validateOrderStrict: true,
+    maxMarkers: 10000,
+    idUniqueness: true
   }
+};
 
-  document.getElementById("btn1").addEventListener("click", ()=> addRecord("◎"));
-  document.getElementById("btn2").addEventListener("click", ()=> addRecord("○"));
-  document.getElementById("btn3").addEventListener("click", ()=> addRecord("△"));
+/* =========================
+   ストレージキー & 状態
+   ========================= */
+const LS_TITLE   = 'timecheck_title';
+const LS_REC     = 'timecheck_records_v6';
+const LS_START_E = 'timecheck_start_epoch';
+const LS_START_C = 'timecheck_start_clock';
 
-  function saveData() {
-    localStorage.setItem("timecheck_records", JSON.stringify(records));
-    localStorage.setItem("timecheck_title", titleEl.textContent);
-  }
+let title = loadTitle();
+let records = loadRecords();              // {id,typeIdx,typeLabel,comment,timecode,epoch}
+let sessionStartEpoch = loadStartEpoch(); // ms (JST)
+let sessionStartClock = loadStartClock(); // "hh:mm:ss:00"
 
-  function renderTable() {
-    while (table.rows.length > 1) table.deleteRow(1);
-    records.forEach((r, i)=>{
-      const row = table.insertRow(-1);
-      row.insertCell(0).textContent = i+1;
-      row.insertCell(1).textContent = r.type;
-      const cmtCell = row.insertCell(2);
-      const input = document.createElement("input");
-      input.type = "text";
-      input.className = "commentEdit";
-      input.value = r.comment || "";
-      input.addEventListener("change", ()=>{
-        r.comment = input.value;
-        saveData();
-      });
-      cmtCell.appendChild(input);
-      row.insertCell(3).textContent = r.time;
-      const delCell = row.insertCell(4);
-      const delBtn = document.createElement("button");
-      delBtn.textContent = "🗑️";
-      delBtn.className = "delBtn";
-      delBtn.onclick = ()=>{
-        if (confirm("この記録を削除しますか？")) {
-          records.splice(i,1);
-          saveData();
-          renderTable();
-        }
-      };
-      delCell.appendChild(delBtn);
-    });
-  }
-
+/* =========================
+   初期化
+   ========================= */
+document.addEventListener('DOMContentLoaded', () => {
   // タイトル編集
-  editTitleBtn.addEventListener("click", ()=>{
-    if (titleInputActive) return;
-    titleInputActive = true;
-    const input = document.createElement("input");
-    input.id = "titleInput";
-    input.value = titleEl.textContent;
-    titleEl.replaceWith(input);
-    input.focus();
-    input.addEventListener("blur", ()=>{
-      const newTitle = input.value.trim() || "新しい記録";
-      const newH1 = document.createElement("h1");
-      newH1.id = "pageTitle";
-      newH1.textContent = newTitle;
-      input.replaceWith(newH1);
-      titleInputActive = false;
-      titleEl = newH1;
-      saveData();
-    });
+  const editTitleBtn = byId('editTitle');
+  if (editTitleBtn) editTitleBtn.addEventListener('click', onEditTitle);
+
+  // 新規セッション
+  const startBtn = byId('startSession');
+  if (startBtn) startBtn.addEventListener('click', onStartSession);
+
+  // 記録ボタン
+  byId('addStrong')?.addEventListener('click', () => addRecord(0));
+  byId('addNormal')?.addEventListener('click', () => addRecord(1));
+  byId('addWeak')  ?.addEventListener('click', () => addRecord(2));
+
+  // 出力
+  byId('dlCsv')?.addEventListener('click', onDownloadCsv);
+  byId('dlXml')?.addEventListener('click', onDownloadXml);
+
+  updateTitleUI();
+  renderList();
+  renderInfo();
+  msg('準備完了。まず「🆕 記録を新たに始める」で開始TC（実時間）を設定してください。');
+});
+
+/* =========================
+   ハンドラ
+   ========================= */
+function onEditTitle(){
+  const newTitle = prompt('タイトルを入力', title || 'タイムチェック');
+  if (!newTitle || !newTitle.trim()) return;
+  title = newTitle.trim();
+  saveTitle(); updateTitleUI(); renderInfo();
+  msg('タイトルを更新しました。');
+}
+
+function onStartSession(){
+  const proposed = prompt('新しいタイトル名を入力', title || 'タイムチェック');
+  if (!proposed || !proposed.trim()) return;
+  if (!confirm(`「${proposed.trim()}」で新規記録を開始します。よろしいですか？`)) return;
+
+  // リセット＆開始TC設定（実時間）
+  title = proposed.trim(); saveTitle();
+  records = []; saveRecords();
+  sessionStartEpoch = nowEpoch(CONFIG.timecode.timezone);
+  sessionStartClock = nowClockString(CONFIG.timecode.timezone, CONFIG.timecode.clockFrameAlwaysZero, CONFIG.timecode.displayFormat);
+  saveStartEpoch(sessionStartEpoch); saveStartClock(sessionStartClock);
+
+  updateTitleUI(); renderList(); renderInfo();
+  msg(`新規記録を開始しました。（${CONFIG.timecode.displayFormat}）`);
+}
+
+function addRecord(typeIdx){
+  if (!ensureSessionStarted()) return;
+  const tc = nowClockString(CONFIG.timecode.timezone, CONFIG.timecode.clockFrameAlwaysZero, CONFIG.timecode.displayFormat);
+  const t  = nowEpoch(CONFIG.timecode.timezone);
+  const id = `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+  records.push({
+    id,
+    typeIdx,
+    typeLabel: typeIdx===0?CONFIG.marker.typeLabelMap.strong
+              :typeIdx===1?CONFIG.marker.typeLabelMap.normal
+              :CONFIG.marker.typeLabelMap.weak,
+    comment: '',
+    timecode: tc,
+    epoch: t
+  });
+  saveRecords(); renderList();
+}
+
+function onDownloadCsv(){
+  if (!ensureSessionStarted()) return;
+  if (!records.length) return alert('記録がありません。');
+  const header = ['type','comment','timecode'];
+  const rows = records.map(r => [r.typeLabel, csvEscape(r.comment||''), r.timecode]);
+  const csv = [header.join(',')].concat(rows.map(a=>a.join(','))).join('\n');
+  downloadText(csv, 'text/csv', `${sequenceName(title)}_markers.csv`);
+  msg('CSVを生成しました。');
+}
+function markerColorByType(type){
+  switch (String(type || '').trim()) {
+    case '◎': case 'OK': return '4280578025';//青
+    case '○': case '使えるかも': return '4294741314';//緑
+    case '△': return '4281828977'; // オレンジ
+    default: return '';
+  }
+}
+function onDownloadXml(){
+  if (!ensureSessionStarted()) return;
+  if (!records.length) return alert('記録がありません。');
+
+  const fps = CONFIG.timecode.timebaseFps;
+  const framesOf = (ms) => Math.max(Math.floor((ms/1000) * fps), 0);
+  const t0 = sessionStartEpoch;
+  const markerIns = records.map(r => framesOf(r.epoch - t0));
+  const lastIn = Math.max(...markerIns);
+  const durationFrames = lastIn + CONFIG.sequence.durationBufferFrames;
+
+  const startString = normalizeStartString(sessionStartClock, CONFIG.timecode.displayFormat);
+
+  // <marker>（<timecode>直後に直列）
+const markersXML = records.map((r, idx) => `
+    <marker>
+      <comment>${xmlEscape(r.comment || '')}${CONFIG.marker.includeClockInComment ? ' (clock '+xmlEscape(r.timecode)+')' : ''}</comment>
+      <name>${xmlEscape(r.typeLabel)}</name>
+      <in>${markerIns[idx]}</in>
+      <out>${CONFIG.marker.outForPoint}</out>
+      <pproColor>${markerColorByType(r.typeLabel)}</pproColor>
+    </marker>`.trim()).join('\n');
+
+  
+function timecodeToFrames(tc, fps, dropFrame) {
+  // コロン(:)とセミコロン(;)両方に対応
+  const [hh, mm, ss, ff] = tc.split(/[:;]/).map(Number);
+
+  let frames = (hh * 3600 + mm * 60 + ss) * fps + ff;
+
+  if (dropFrame && (fps === 29.97 || fps === 30)) {
+    const totalMinutes = hh * 60 + mm;
+    const dropFrames = Math.floor((totalMinutes - Math.floor(totalMinutes / 10)) * 2);
+    frames -= dropFrames;
+  }
+
+  return Math.round(frames);
+}
+const isDF = (CONFIG.timecode.displayFormat === 'DF');
+const frameCount = timecodeToFrames(startString, fps, isDF);
+const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xmeml>
+<xmeml version="${CONFIG.sequence.xmemlVersion}">
+  <sequence id="${CONFIG.sequence.idPrefix}-1">
+    <name>${xmlEscape(sequenceName(title))}</name>
+    <rate><timebase>${fps}</timebase><ntsc>${CONFIG.timecode.ntsc ? 'TRUE' : 'FALSE'}</ntsc></rate>
+    <duration>${durationFrames}</duration>
+    <in>0</in><out>${durationFrames}</out>
+
+    <timecode>
+      <rate><timebase>${fps}</timebase><ntsc>${CONFIG.timecode.ntsc ? 'TRUE' : 'FALSE'}</ntsc></rate>
+      <string>${xmlEscape(startString)}</string>
+      <frame>${frameCount}</frame>
+      <displayformat>${CONFIG.timecode.displayFormat}</displayformat>
+    </timecode>
+
+${markersXML}
+
+    <media>
+      <video>
+        <format>
+          <samplecharacteristics>
+            <width>${CONFIG.video.width}</width><height>${CONFIG.video.height}</height>
+            <pixelaspectratio>${CONFIG.video.pixelAspectRatio}</pixelaspectratio>
+            <fielddominance>${CONFIG.video.fieldDominance}</fielddominance>
+            <rate><timebase>${fps}</timebase><ntsc>${CONFIG.timecode.ntsc ? 'TRUE' : 'FALSE'}</ntsc></rate>
+          </samplecharacteristics>
+        </format>
+        <track></track>
+      </video>
+      <audio><track></track></audio>
+    </media>
+  </sequence>
+</xmeml>`;
+
+  downloadText(xml, 'application/xml', `${sequenceName(title)}_markers.xml`);
+  msg('XMLを生成しました（ Premiereで「ファイル > インポート」してください。');
+}
+
+/* =========================
+   画面描画
+   ========================= */
+function renderList(){
+  const list = byId('list'); list.innerHTML = '';
+  records.forEach((r,i) => {
+    const row = document.createElement('div'); row.className = 'item';
+    row.innerHTML = `
+      <span class="label ${r.typeIdx===0?'type0':r.typeIdx===1?'type1':'type2'}">${r.typeLabel}</span>
+      <span class="timecode">${r.timecode}</span>
+      <input class="memo" type="text" placeholder="メモ）" value="${escapeAttr(r.comment||'')}" data-id="${r.id}" />
+      <button class="btnred" style="margin-left:auto" data-del="${i}">削除</button>`;
+    list.appendChild(row);
   });
 
-  // CSV出力
-  downloadCSV.addEventListener("click", ()=>{
-    if (records.length === 0) {
-      alert("記録がありません。");
-      return;
-    }
-    const title = localStorage.getItem("timecheck_title") || "記録";
-    let csv = "No,種別,コメント,時刻\n";
-    records.forEach((r,i)=>{
-      const clean = (t)=> t.replace(/,/g," ");
-      csv += `${i+1},${r.type},${clean(r.comment)},${r.time}\n`;
+  // メモ変更
+  list.querySelectorAll('input.memo').forEach(inp => {
+    inp.addEventListener('input', (e) => {
+      const rid = e.target.getAttribute('data-id');
+      const rec = records.find(x => x.id === rid);
+      if (rec) { rec.comment = e.target.value; saveRecords(); }
     });
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `${title}.csv`;
-    link.click();
+  });
+  // 行削除
+  list.querySelectorAll('button[data-del]').forEach(btn => {
+    btn.addEventListener('click', () => { records.splice(Number(btn.dataset.del),1); saveRecords(); renderList(); });
   });
 
-  // 全削除（二重確認、報告ダイアログなし）
-  clearData.addEventListener("click", ()=>{
-    if (!confirm("全ての記録を削除しますか？")) return;
-    if (!confirm("この操作は取り消せません。本当に実行しますか？")) return;
-    records = [];
-    localStorage.removeItem("timecheck_records");
-    renderTable();
-  });
+  byId('msg').textContent =
+    `記録数: ${records.length}\nファイル名: 「${sequenceName(title)}」\n開始TC: ${sessionStartClock || '(未設定)'}\n出力: CSV / XML（<marker>は<in>/<out=-1>）`;
+}
+
+function renderInfo(){
+  const info = byId('sessionInfo');
+  info.textContent = sessionStartClock
+    ? `開始TC（実時間）: ${sessionStartClock}`
+    : '開始TC（実時間）: 未設定（「🆕 記録を新たに始める」を押してください）';
+}
+
+function updateTitleUI(){
+  byId('titleDisplay').textContent = title || 'タイムチェック';
+}
+
+/* =========================
+   ユーティリティ
+   ========================= */
+const byId = (id) => document.getElementById(id);
+
+function sequenceName(title){
+  return CONFIG.sequence.nameSource === 'fixed' && CONFIG.sequence.fixedName
+    ? CONFIG.sequence.fixedName
+    : (title || 'Sequence');
+}
+function ensureSessionStarted(){
+  if (sessionStartEpoch && sessionStartClock) return true;
+  alert('先に「🆕 記録を新たに始める」を押して、開始TC（実時間）を設定してください。');
+  return false;
+}
+function nowEpoch(tz){
+  const s = new Date().toLocaleString('en-US', { timeZone: tz });
+  return new Date(s).getTime();
+}
+function nowClockString(tz, frameZero, displayFormat){
+  const d = new Date(new Date().toLocaleString('en-US', { timeZone: tz }));
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mm = String(d.getMinutes()).padStart(2,'0');
+  const ss = String(d.getSeconds()).padStart(2,'0');
+  const ff = frameZero ? '00' : String(Math.floor((d.getMilliseconds()/1000)*CONFIG.timecode.timebaseFps)).padStart(2,'0');
+  const sep = displayFormat==='DF' ? ';' : ':';
+  return `${hh}${sep}${mm}${sep}${ss}${sep}${ff}`;
+}
+function normalizeStartString(clock, displayFormat){
+  const sep = displayFormat==='DF' ? ';' : ':';
+  return clock.replace(/[:;]/g, sep);
+}
+
+/* ストレージ */
+function loadTitle(){ try { return localStorage.getItem(LS_TITLE) || document.title || 'タイムチェック'; } catch(e){ return 'タイムチェック'; } }
+function saveTitle(){ localStorage.setItem(LS_TITLE, title); }
+function loadRecords(){ try { return JSON.parse(localStorage.getItem(LS_REC)) || []; } catch(e){ return []; } }
+function saveRecords(){ localStorage.setItem(LS_REC, JSON.stringify(records)); }
+function loadStartEpoch(){ try { const v = localStorage.getItem(LS_START_E); return v? Number(v): null; } catch(e){ return null; } }
+function saveStartEpoch(v){ localStorage.setItem(LS_START_E, String(v)); }
+function loadStartClock(){ try { return localStorage.getItem(LS_START_C) || null; } catch(e){ return null; } }
+function saveStartClock(v){ localStorage.setItem(LS_START_C, v); }
+
+/* 共通 */
+function xmlEscape(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;'); }
+function escapeAttr(s){ return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function csvEscape(s){ s = String(s||'').replace(/"/g,'""'); return /[",\n]/.test(s) ? `"${s}"` : s; }
+function downloadText(text, mime, filename){
+  const blob = new Blob([text], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+function msg(t){ byId('msg').textContent = t; }
+
 </script>
-
 </body>
 </html>
+
+<script>
+function renderList(){
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+  records.forEach((r,i) => {
+    const row = document.createElement('div');
+    row.className = 'item';
+    row.innerHTML = `
+      <span class="label ${r.typeIdx===0?'type0':r.typeIdx===1?'type1':'type2'}">${r.typeLabel}</span>
+      <span class="timecode">${r.timecode}</span>
+      <input class="memo" type="text" placeholder="メモ " value="${escapeAttr(r.comment||'')}" data-id="${r.id}" />
+      <button class="btnred" style="margin-left:auto" data-del="${i}">削除</button>`;
+    list.prepend(row);
+  });
+
+  // メモ変更
+  list.querySelectorAll('input.memo').forEach(inp => {
+    inp.addEventListener('input', (e) => {
+      const rid = e.target.getAttribute('data-id');
+      const rec = records.find(x => x.id === rid);
+      if (rec) { rec.comment = e.target.value; saveRecords(); }
+    });
+  });
+
+  // 行削除（確認ダイアログ付き）
+  list.querySelectorAll('button[data-del]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const row = btn.closest('.item');
+      const timeText = row.querySelector('.timecode')?.textContent || '';
+      if (!confirm(`${timeText} の記録を消しますか？`)) return;
+      records.splice(Number(btn.dataset.del), 1);
+      saveRecords();
+      renderList();
+    });
+  });
+}
+</script>
